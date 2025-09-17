@@ -100,6 +100,7 @@ const municipiosRJ: Record<string, { lat: number; lng: number; codigoIBGE: strin
   'sao francisco de itabapoana': { lat: -21.4569, lng: -41.0369, codigoIBGE: '3304707' },
   'sao joao da barra': { lat: -21.6447, lng: -41.0517, codigoIBGE: '3304806' },
   'sao joao de meriti': { lat: -22.8039, lng: -43.3728, codigoIBGE: '3304905' },
+  'sao goncalo': { lat: -22.8269, lng: -43.0536, codigoIBGE: '3304905' },
   'sao jose de uba': { lat: -21.3489, lng: -41.9506, codigoIBGE: '3305000' },
   'sao jose do vale do rio preto': { lat: -22.1556, lng: -42.5956, codigoIBGE: '3305109' },
   'sao pedro da aldeia': { lat: -22.8750, lng: -42.1014, codigoIBGE: '3305208' },
@@ -226,34 +227,13 @@ async function geocodificarEndereco(endereco: string): Promise<{ lat: number; ln
     
     // Verificar se temos o município no nosso banco de dados
     for (const [municipioKey, coords] of Object.entries(municipiosRJ)) {
-      if (enderecoNormalizado.includes(municipioKey)) {
-        // Usar ZAI SDK para obter coordenadas mais precisas
-        const zai = await ZAI.create()
-        
-        try {
-          const searchResult = await zai.functions.invoke("web_search", {
-            query: `geocodificação coordenadas ${endereco} Rio de Janeiro Brasil`,
-            num: 3
-          })
-          
-          // Tentar extrair coordenadas dos resultados da busca
-          for (const result of searchResult) {
-            const coordsMatch = result.snippet.match(/(-?\d+\.?\d*),\s*(-?\d+\.?\d*)/)
-            if (coordsMatch) {
-              const lat = parseFloat(coordsMatch[1])
-              const lng = parseFloat(coordsMatch[2])
-              
-              // Validar se as coordenadas estão dentro do estado do Rio de Janeiro
-              if (lat >= -23 && lat <= -20 && lng >= -45 && lng <= -40) {
-                return { lat, lng, municipio: municipioKey }
-              }
-            }
-          }
-        } catch (searchError) {
-          console.log('Erro na busca web, usando coordenadas padrão:', searchError)
-        }
-        
-        // Fallback para coordenadas do centro do município
+      const municipioKeyNormalizado = municipioKey.toLowerCase()
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .replace(/[^\w\s]/g, '')
+        .trim()
+      
+      if (enderecoNormalizado.includes(municipioKeyNormalizado)) {
         return { lat: coords.lat, lng: coords.lng, municipio: municipioKey }
       }
     }
@@ -293,14 +273,45 @@ async function geocodificarEndereco(endereco: string): Promise<{ lat: number; ln
       'são pedro da aldeia': ['são pedro da aldeia', 'sao pedro', 'pedro da aldeia']
     }
 
+    let melhorVariacao = null
+    let melhorScoreVariacao = 0
+    
     for (const [municipio, variacoes] of Object.entries(variacoesMunicipios)) {
       for (const variacao of variacoes) {
-        if (enderecoNormalizado.includes(variacao)) {
-          const coords = municipiosRJ[municipio]
-          if (coords) {
-            return { lat: coords.lat, lng: coords.lng, municipio }
+        // Normalizar também a variação para comparação
+        const variacaoNormalizada = variacao.toLowerCase()
+          .normalize('NFD')
+          .replace(/[\u0300-\u036f]/g, '')
+          .replace(/[^\w\s]/g, '')
+          .trim()
+          
+        if (enderecoNormalizado.includes(variacaoNormalizada)) {
+          // Priorizar correspondências mais longas e específicas
+          // Dar peso extra para correspondências de nomes completos
+          let score = variacaoNormalizada.length / enderecoNormalizado.length
+          
+          // Bônus para correspondências exatas ou quase exatas
+          if (variacaoNormalizada.length > 5) {
+            score *= 1.5
+          }
+          
+          // Bônus adicional para o nome completo do município
+          if (variacao === municipio) {
+            score *= 2
+          }
+          
+          if (score > melhorScoreVariacao) {
+            melhorScoreVariacao = score
+            melhorVariacao = municipio
           }
         }
+      }
+    }
+    
+    if (melhorVariacao) {
+      const coords = municipiosRJ[melhorVariacao]
+      if (coords) {
+        return { lat: coords.lat, lng: coords.lng, municipio: melhorVariacao }
       }
     }
 
