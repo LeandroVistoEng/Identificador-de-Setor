@@ -14,21 +14,19 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Z.ai Code Scaffold - AI-Powered Development",
-  description: "Modern Next.js scaffold optimized for AI-powered development with Z.ai. Built with TypeScript, Tailwind CSS, and shadcn/ui.",
-  keywords: ["Z.ai", "Next.js", "TypeScript", "Tailwind CSS", "shadcn/ui", "AI development", "React"],
-  authors: [{ name: "Z.ai Team" }],
+  title: "Sistema de Identificação de Setor Censitário - Rio de Janeiro",
+  description: "Ferramenta para identificar códigos de setores censitários do IBGE no Estado do Rio de Janeiro a partir de endereços ou coordenadas geográficas.",
+  keywords: ["Setor Censitário", "IBGE", "Rio de Janeiro", "Geocodificação", "Endereços", "Coordenadas", "Brasil"],
+  authors: [{ name: "Setor Censitário RJ" }],
   openGraph: {
-    title: "Z.ai Code Scaffold",
-    description: "AI-powered development with modern React stack",
-    url: "https://chat.z.ai",
-    siteName: "Z.ai",
+    title: "Sistema de Identificação de Setor Censitário",
+    description: "Identificação de códigos de setores censitários no Estado do Rio de Janeiro",
     type: "website",
   },
   twitter: {
     card: "summary_large_image",
-    title: "Z.ai Code Scaffold",
-    description: "AI-powered development with modern React stack",
+    title: "Sistema de Identificação de Setor Censitário",
+    description: "Identificação de códigos de setores censitários no Estado do Rio de Janeiro",
   },
 };
 
